@@ -1,0 +1,22 @@
+{
+    "name": "chia-utils",
+    "version": "1.0.0",
+    "main": "dist/src/index.js",
+    "module": "",
+    "license": "MIT",
+    "type": "module",
+    "scripts": {
+        "test": "mocha './dist/test/**/*.js' --require source-map-support/register --recursive --timeout 0"
+    },
+    "devDependencies": {
+        "@types/chai": "^4.2.22",
+        "@types/mocha": "^9.0.0",
+        "@types/node": "^16.11.9",
+        "chai": "^4.3.4",
+        "mocha": "^9.1.3",
+        "source-map-support": "^0.5.21"
+    },
+    "dependencies": {
+        "@rigidity/bls-signatures": "^1.0.4"
+    }
+}

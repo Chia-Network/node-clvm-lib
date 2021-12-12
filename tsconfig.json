@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+        "downlevelIteration": true,
+        "esModuleInterop": true,
+        "inlineSourceMap": true,
+        "declaration": true,
+        "noImplicitAny": true,
+        "noImplicitThis": true,
+        "noImplicitOverride": true,
+        "strict": true,
+        "module": "ESNext",
+        "moduleResolution": "node",
+        "target": "ESNext",
+        "outDir": "dist"
+    },
+    "include": ["src", "test"]
+}
