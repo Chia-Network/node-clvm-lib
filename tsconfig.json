@@ -8,7 +8,7 @@
         "noImplicitThis": true,
         "noImplicitOverride": true,
         "strict": true,
-        "module": "ESNext",
+        "module": "CommonJS",
         "moduleResolution": "node",
         "target": "ESNext",
         "outDir": "dist"

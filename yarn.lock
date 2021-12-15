@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@rigidity/bls-signatures@^1.0.4":
-  version "1.0.4"
-  resolved "https://registry.yarnpkg.com/@rigidity/bls-signatures/-/bls-signatures-1.0.4.tgz#ac13f2086011ee4696949f5271d2aaf181f61577"
-  integrity sha512-XJnDvSV5bWLuM3cyD2E+ITSm37LenTAhOziQ7AEQmZrB2UyuCRPbaKYPOZ/Ul0yxN4xKwy7qRRvjfXtAa7cQDQ==
+"@rigidity/bls-signatures@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@rigidity/bls-signatures/-/bls-signatures-1.1.0.tgz#94a769b4c69f88786f33f0da7d7d2b1f1e3da842"
+  integrity sha512-eImn0H8Ol49T+7/1mNq/QjGsyyfyuw8pHoW9w8edT3YMfeSO9yeewfL5j5ui0muyXD1GMk90Y59f8EGNZqPTLg==
   dependencies:
     chai "^4.3.4"
 
