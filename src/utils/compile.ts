@@ -1,6 +1,6 @@
 import { encodeBigInt } from '@rigidity/bls-signatures';
 import { applyAtom, consAtom, quoteAtom } from '../constants/atoms.js';
-import { CompileOptions, keywords, Program, ProgramOutput } from '../index.js';
+import { keywords, Program, ProgramOutput } from '../index.js';
 import { BetterSet } from '../types/BetterSet.js';
 import { NodePath } from '../types/NodePath.js';
 import {
@@ -25,18 +25,11 @@ export function compileQq(
     args: Program,
     macroLookup: Program,
     symbolTable: Program,
-    options: CompileOptions,
     runProgram: Eval,
     level: number = 1
 ): Program {
     function com(program: Program): Program {
-        return doComProgram(
-            program,
-            macroLookup,
-            symbolTable,
-            options,
-            runProgram
-        );
+        return doComProgram(program, macroLookup, symbolTable, runProgram);
     }
 
     const program = args.first;
@@ -50,7 +43,6 @@ export function compileQq(
                 program.rest,
                 macroLookup,
                 symbolTable,
-                options,
                 runProgram,
                 level + 1
             );
@@ -73,7 +65,6 @@ export function compileQq(
                 program.rest,
                 macroLookup,
                 symbolTable,
-                options,
                 runProgram,
                 level - 1
             );
@@ -101,7 +92,6 @@ export function compileMacros(
     _args: Program,
     macroLookup: Program,
     _symbolTable: Program,
-    _options: CompileOptions,
     _runProgram: Eval
 ): Program {
     return quoteAsProgram(macroLookup);
@@ -111,7 +101,6 @@ export function compileSymbols(
     _args: Program,
     _macroLookup: Program,
     symbolTable: Program,
-    _options: CompileOptions,
     _runProgram: Eval
 ): Program {
     return quoteAsProgram(symbolTable);
@@ -150,7 +139,6 @@ export function doComProgram(
     program: Program,
     macroLookup: Program,
     symbolTable: Program,
-    options: CompileOptions,
     runProgram: Eval
 ): Program {
     program = lowerQuote(program, macroLookup, symbolTable, runProgram);
@@ -204,7 +192,6 @@ export function doComProgram(
             program.rest,
             macroLookup,
             symbolTable,
-            options,
             runProgram
         );
         return evalAsProgram(
@@ -218,7 +205,7 @@ export function doComProgram(
     const compiledArgs = program.rest
         .toList()
         .map((item) =>
-            doComProgram(item, macroLookup, symbolTable, options, runProgram)
+            doComProgram(item, macroLookup, symbolTable, runProgram)
         );
     let result = Program.fromList([operator, ...compiledArgs]);
     if (
@@ -267,7 +254,7 @@ export function doComProgram(
     );
 }
 
-export function makeDoCom(runProgram: Eval, options: CompileOptions): Operator {
+export function makeDoCom(runProgram: Eval): Operator {
     return (sexp: Program): ProgramOutput => {
         const prog = sexp.first;
         let symbolTable = Program.nil;
@@ -279,13 +266,7 @@ export function makeDoCom(runProgram: Eval, options: CompileOptions): Operator {
             macroLookup = defaultMacroLookup(runProgram);
         }
         return {
-            value: doComProgram(
-                prog,
-                macroLookup,
-                symbolTable,
-                options,
-                runProgram
-            ),
+            value: doComProgram(prog, macroLookup, symbolTable, runProgram),
             cost: 1n,
         };
     };

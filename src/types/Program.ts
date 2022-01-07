@@ -33,7 +33,6 @@ export interface RunOptions {
 
 export interface CompileOptions extends RunOptions {
     includePaths: string[];
-    include: Program[];
 }
 
 export type Cons = [Program, Program];
@@ -121,6 +120,10 @@ export class Program {
         else throw new ParserError('Unexpected end of source.');
     }
 
+    public static fromFile(file: string): Program {
+        return Program.fromSource(fs.readFileSync(file, 'utf-8').trim());
+    }
+
     public static fromList(programs: Program[]): Program {
         let result = Program.nil;
         for (const program of programs.reverse())
@@ -132,6 +135,10 @@ export class Program {
         const program = [...bytes];
         if (!program.length) throw new ParserError('Unexpected end of source.');
         return deserialize(program);
+    }
+
+    public static deserializeFile(file: string): Program {
+        return Program.deserializeHex(fs.readFileSync(file, 'utf-8').trim());
     }
 
     public static deserializeHex(hex: string): Program {
@@ -187,12 +194,31 @@ export class Program {
         return this.hash().toString('hex');
     }
 
+    public define(program: Program): Program {
+        let result: Program = this;
+        if (this.isAtom || this.first.isCons || this.first.toText() !== 'mod')
+            result = Program.fromList([
+                Program.fromText('mod'),
+                Program.nil,
+                this,
+            ]);
+        const items = result.toList();
+        items.splice(2, 0, program);
+        return Program.fromList(items);
+    }
+
+    public defineAll(programs: Program[]): Program {
+        let result: Program = this;
+        for (const program of programs.reverse())
+            result = result.define(program);
+        return result;
+    }
+
     public compile(options: Partial<CompileOptions> = {}): ProgramOutput {
         const fullOptions: CompileOptions = {
             strict: false,
             operators: makeDefaultOperators(),
             includePaths: [],
-            include: [],
             ...options,
         };
         if (fullOptions.strict)
@@ -218,7 +244,7 @@ export class Program {
             return program.run(args, fullOptions);
         }
         const bindings = {
-            com: makeDoCom(runProgram, fullOptions),
+            com: makeDoCom(runProgram),
             opt: makeDoOpt(runProgram),
             _full_path_for_name: doFullPathForName,
             _read: doRead,
@@ -367,6 +393,10 @@ export class Program {
         }
     }
 
+    public toFile(file: string, showKeywords: boolean = true): void {
+        fs.writeFileSync(file, this.toSource(showKeywords), 'utf-8');
+    }
+
     public toList(strict: boolean = false): Program[] {
         const result: Array<Program> = [];
         let current: Program = this;
@@ -426,6 +456,10 @@ export class Program {
 
     public serializeHex(): string {
         return this.serialize().toString('hex');
+    }
+
+    public serializeFile(file: string): void {
+        fs.writeFileSync(file, this.serializeHex(), 'utf-8');
     }
 
     public equals(value: Program): boolean {

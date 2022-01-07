@@ -1,5 +1,5 @@
 import { consAtom } from '../constants/atoms.js';
-import { CompileOptions, Program } from '../index.js';
+import { Program } from '../index.js';
 import { BetterSet } from '../types/BetterSet.js';
 import { NodePath } from '../types/NodePath.js';
 import { compareStrings } from './compare';
@@ -153,7 +153,6 @@ export function parseModProgram(
 
 export function compileModStage1(
     args: Program,
-    options: CompileOptions,
     runProgram: Eval
 ): [functions: Group, constants: Group, macros: Program[]] {
     const functions: Group = {};
@@ -161,19 +160,6 @@ export function compileModStage1(
     const macros: Array<Program> = [];
     const mainLocalArguments = args.first;
     const namespace = new BetterSet<string>();
-    if ('include' in options)
-        for (const program of options.include) {
-            for (const item of program.toList()) {
-                parseModProgram(
-                    item,
-                    namespace,
-                    functions,
-                    constants,
-                    macros,
-                    runProgram
-                );
-            }
-        }
     while (true) {
         args = args.rest;
         if (args.rest.isNull) break;
@@ -267,14 +253,9 @@ export function compileMod(
     args: Program,
     macroLookup: Program,
     _symbolTable: Program,
-    options: CompileOptions,
     runProgram: Eval
 ): Program {
-    const [functions, constants, macros] = compileModStage1(
-        args,
-        options,
-        runProgram
-    );
+    const [functions, constants, macros] = compileModStage1(args, runProgram);
     const macroLookupProgram = buildMacroLookupProgram(
         macroLookup,
         macros,
