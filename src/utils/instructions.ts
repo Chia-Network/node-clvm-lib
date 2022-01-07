@@ -1,6 +1,5 @@
-import { encodeBigInt } from '@rigidity/bls-signatures';
+import { applyAtom, quoteAtom } from '../constants/atoms';
 import { costs } from '../constants/cost.js';
-import { keywords } from '../constants/keywords.js';
 import { Instruction, Program } from '../types/Program.js';
 import { traversePath } from './environment.js';
 import { runOperator } from './operators.js';
@@ -24,13 +23,12 @@ export const instructions = {
         const args = pair.rest;
         if (program.isAtom) {
             const output = traversePath(program, args);
-            stack.push(output[0]);
-            return output[1];
+            stack.push(output.value);
+            return output.cost;
         }
         const op = program.first;
         if (op.isCons) {
-            const newOperator = op.first;
-            const mustBeNil = op.rest;
+            const [newOperator, mustBeNil] = op.cons;
             if (newOperator.isCons || !mustBeNil.isNull)
                 throw new Error(
                     `Operators that are lists must contain a single atom${op.positionSuffix}.`
@@ -41,7 +39,7 @@ export const instructions = {
             return costs.apply;
         }
         let operandList = program.rest;
-        if (op.atom.equals(encodeBigInt(keywords.q))) {
+        if (op.atom.equals(quoteAtom)) {
             stack.push(operandList);
             return costs.quote;
         }
@@ -64,7 +62,7 @@ export const instructions = {
         const op = stack.pop()!;
         if (op.isCons)
             throw new Error(`An internal error occurred${op.positionSuffix}.`);
-        if (op.atom.equals(encodeBigInt(keywords.a))) {
+        if (op.atom.equals(applyAtom)) {
             const args = operandList.toList();
             if (args.length !== 2)
                 throw new Error(
@@ -75,7 +73,7 @@ export const instructions = {
             return costs.apply;
         }
         const output = runOperator(op, operandList, options);
-        stack.push(output[0]);
-        return output[1];
+        stack.push(output.value);
+        return output.cost;
     }) as Instruction,
 };

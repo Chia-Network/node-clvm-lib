@@ -1,51 +1,59 @@
-import { createHash } from 'crypto';
-import { costs } from '../constants/cost.js';
-import { Program, ProgramOptions, ProgramOutput } from '../types/Program.js';
 import {
-    mod,
     bigIntToBytes,
-    defaultEc,
-    PrivateKey,
-    JacobianPoint,
     bytesToBigInt,
     bytesToInt,
+    defaultEc,
+    JacobianPoint,
+    mod,
+    PrivateKey,
 } from '@rigidity/bls-signatures';
-import { keywords } from '../constants/keywords.js';
+import { createHash } from 'crypto';
+import { keywords } from '..';
+import { costs } from '../constants/cost.js';
+import { Program, ProgramOutput, RunOptions } from '../types/Program.js';
 
 export type Operator = (args: Program) => ProgramOutput;
+
+export interface Operators {
+    operators: Record<string, Operator>;
+    unknown: (operator: Program, args: Program) => ProgramOutput;
+    quote: string;
+    apply: string;
+}
 
 export const operators = {
     i: ((args: Program): ProgramOutput => {
         const list = toList(args, 'i', 3);
-        return [list[0].isNull ? list[2] : list[1], costs.if];
+        return { value: list[0].isNull ? list[2] : list[1], cost: costs.if };
     }) as Operator,
     c: ((args: Program): ProgramOutput => {
         const list = toList(args, 'c', 2);
-        return [Program.cons(list[0], list[1]), costs.cons];
+        return { value: Program.cons(list[0], list[1]), cost: costs.cons };
     }) as Operator,
     f: ((args: Program): ProgramOutput => {
         const list = toList(args, 'f', 1, 'cons');
-        return [list[0].first, costs.first];
+        return { value: list[0].first, cost: costs.first };
     }) as Operator,
     r: ((args: Program): ProgramOutput => {
         const list = toList(args, 'r', 1, 'cons');
-        return [list[0].rest, costs.rest];
+        return { value: list[0].rest, cost: costs.rest };
     }) as Operator,
     l: ((args: Program): ProgramOutput => {
         const list = toList(args, 'l', 1);
-        return [Program.fromBool(list[0].isCons), costs.listp];
+        return { value: Program.fromBool(list[0].isCons), cost: costs.listp };
     }) as Operator,
     x: ((args: Program): ProgramOutput => {
         throw new Error(`The error ${args} was raised${args.positionSuffix}.`);
     }) as Operator,
     '=': ((args: Program): ProgramOutput => {
         const list = toList(args, '=', 2, 'atom');
-        return [
-            Program.fromBool(list[0].atom.equals(list[1].atom)),
-            costs.eqBase +
+        return {
+            value: Program.fromBool(list[0].atom.equals(list[1].atom)),
+            cost:
+                costs.eqBase +
                 (BigInt(list[0].atom.length) + BigInt(list[1].atom.length)) *
                     costs.eqPerByte,
-        ];
+        };
     }) as Operator,
     sha256: ((args: Program): ProgramOutput => {
         const list = toList(args, 'sha256', undefined, 'atom');
@@ -58,12 +66,12 @@ export const operators = {
             cost += costs.sha256PerArg;
         }
         cost += BigInt(argLength) * costs.sha256PerByte;
-        return mallocCost([
-            Program.fromBytes(
+        return mallocCost({
+            value: Program.fromBytes(
                 createHash('sha256').update(Buffer.from(bytes)).digest()
             ),
             cost,
-        ]);
+        });
     }) as Operator,
     '+': ((args: Program): ProgramOutput => {
         const list = toList(args, '+', undefined, 'atom');
@@ -76,11 +84,11 @@ export const operators = {
             cost += costs.arithPerArg;
         }
         cost += BigInt(argSize) * costs.arithPerByte;
-        return mallocCost([Program.fromBigInt(total), cost]);
+        return mallocCost({ value: Program.fromBigInt(total), cost });
     }) as Operator,
     '-': ((args: Program): ProgramOutput => {
         let cost = costs.arithBase;
-        if (args.isNull) return [Program.nil, cost];
+        if (args.isNull) return { value: Program.nil, cost: cost };
         const list = toList(args, '-', undefined, 'atom');
         let total = 0n;
         let sign = 1n;
@@ -92,12 +100,12 @@ export const operators = {
             cost += costs.arithPerArg;
         }
         cost += BigInt(argSize) * costs.arithPerByte;
-        return mallocCost([Program.fromBigInt(total), cost]);
+        return mallocCost({ value: Program.fromBigInt(total), cost });
     }) as Operator,
     '*': ((args: Program): ProgramOutput => {
         const list = toList(args, '*', undefined, 'atom');
         let cost = costs.mulBase;
-        if (!list.length) return mallocCost([Program.true, cost]);
+        if (!list.length) return mallocCost({ value: Program.true, cost });
         let value = list[0].toBigInt();
         let size = list[0].atom.length;
         for (const item of list.slice(1)) {
@@ -110,7 +118,7 @@ export const operators = {
             value *= item.toBigInt();
             size = limbsForBigInt(value);
         }
-        return mallocCost([Program.fromBigInt(value), cost]);
+        return mallocCost({ value: Program.fromBigInt(value), cost });
     }) as Operator,
     divmod: ((args: Program): ProgramOutput => {
         const list = toList(args, 'divmod', 2, 'atom');
@@ -133,7 +141,7 @@ export const operators = {
         cost +=
             (BigInt(quotient.atom.length) + BigInt(remainder.atom.length)) *
             costs.mallocPerByte;
-        return [Program.cons(quotient, remainder), cost];
+        return { value: Program.cons(quotient, remainder), cost };
     }) as Operator,
     '/': ((args: Program): ProgramOutput => {
         const list = toList(args, '/', 2, 'atom');
@@ -149,10 +157,10 @@ export const operators = {
             costs.divPerByte;
         let quotientValue = numerator / denominator;
         const remainderValue = mod(numerator, denominator);
-        if (numerator < 0n !== denominator < 0n && remainderValue !== 0n)
+        if (numerator < 0n !== denominator < 0n && quotientValue < 0n)
             quotientValue -= 1n;
         const quotient = Program.fromBigInt(quotientValue);
-        return mallocCost([quotient, cost]);
+        return mallocCost({ value: quotient, cost });
     }) as Operator,
     '>': ((args: Program): ProgramOutput => {
         const list = toList(args, '>', 2, 'atom');
@@ -160,10 +168,10 @@ export const operators = {
             costs.grBase +
             (BigInt(list[0].atom.length) + BigInt(list[1].atom.length)) *
                 costs.grPerByte;
-        return [
-            Program.fromBool(list[0].toBigInt() > list[1].toBigInt()),
+        return {
+            value: Program.fromBool(list[0].toBigInt() > list[1].toBigInt()),
             cost,
-        ];
+        };
     }) as Operator,
     '>s': ((args: Program): ProgramOutput => {
         const list = toList(args, '>s', 2, 'atom');
@@ -171,12 +179,12 @@ export const operators = {
             costs.grsBase +
             (BigInt(list[0].atom.length) + BigInt(list[1].atom.length)) *
                 costs.grsPerByte;
-        return [
-            Program.fromBool(
+        return {
+            value: Program.fromBool(
                 list[0].toHex().localeCompare(list[1].toHex()) === 1
             ),
             cost,
-        ];
+        };
     }) as Operator,
     pubkey_for_exp: ((args: Program): ProgramOutput => {
         const list = toList(args, 'pubkey_for_exp', 1, 'atom');
@@ -185,10 +193,10 @@ export const operators = {
         const cost =
             costs.pubkeyBase +
             BigInt(list[0].atom.length) * costs.pubkeyPerByte;
-        return mallocCost([
-            Program.fromBytes(exponent.getG1().toBytes()),
+        return mallocCost({
+            value: Program.fromBytes(exponent.getG1().toBytes()),
             cost,
-        ]);
+        });
     }) as Operator,
     point_add: ((args: Program): ProgramOutput => {
         const list = toList(args, 'point_add', undefined, 'atom');
@@ -198,13 +206,13 @@ export const operators = {
             point = point.add(JacobianPoint.fromBytes(item.atom, false));
             cost += costs.pointAddPerArg;
         }
-        return mallocCost([Program.fromBytes(point.toBytes()), cost]);
+        return mallocCost({ value: Program.fromBytes(point.toBytes()), cost });
     }) as Operator,
     strlen: ((args: Program): ProgramOutput => {
         const list = toList(args, 'strlen', 1, 'atom');
         const size = list[0].atom.length;
         const cost = costs.strlenBase + BigInt(size) * costs.strlenPerByte;
-        return mallocCost([Program.fromInt(size), cost]);
+        return mallocCost({ value: Program.fromInt(size), cost });
     }) as Operator,
     substr: ((args: Program): ProgramOutput => {
         const list = toList(args, 'substr', [2, 3], 'atom');
@@ -222,7 +230,7 @@ export const operators = {
             throw new Error(
                 `Invalid indices in "substr" operator${args.positionSuffix}.`
             );
-        return [Program.fromBytes(value.slice(from, to)), 1n];
+        return { value: Program.fromBytes(value.slice(from, to)), cost: 1n };
     }) as Operator,
     concat: ((args: Program): ProgramOutput => {
         const list = toList(args, 'concat', undefined, 'atom');
@@ -233,7 +241,10 @@ export const operators = {
             cost += costs.concatPerArg;
         }
         cost += BigInt(bytes.length) * costs.concatPerByte;
-        return mallocCost([Program.fromBytes(Buffer.from(bytes)), cost]);
+        return mallocCost({
+            value: Program.fromBytes(Buffer.from(bytes)),
+            cost,
+        });
     }) as Operator,
     ash: ((args: Program): ProgramOutput => {
         const list = toList(args, 'ash', 2, 'atom');
@@ -253,7 +264,7 @@ export const operators = {
             costs.ashiftBase +
             (BigInt(list[0].atom.length) + BigInt(limbsForBigInt(value))) *
                 costs.ashiftPerByte;
-        return mallocCost([Program.fromBigInt(value), cost]);
+        return mallocCost({ value: Program.fromBigInt(value), cost });
     }) as Operator,
     lsh: ((args: Program): ProgramOutput => {
         const list = toList(args, 'lsh', 2, 'atom');
@@ -274,7 +285,7 @@ export const operators = {
             costs.lshiftBase +
             (BigInt(list[0].atom.length) + BigInt(limbsForBigInt(value))) *
                 costs.lshiftPerByte;
-        return mallocCost([Program.fromBigInt(value), cost]);
+        return mallocCost({ value: Program.fromBigInt(value), cost });
     }) as Operator,
     logand: ((args: Program): ProgramOutput =>
         binopReduction('logand', -1n, args, (a, b) => a & b)) as Operator,
@@ -287,12 +298,15 @@ export const operators = {
         const cost =
             costs.lognotBase +
             BigInt(items[0].atom.length) * costs.lognotPerByte;
-        return mallocCost([Program.fromBigInt(~items[0].toBigInt()), cost]);
+        return mallocCost({
+            value: Program.fromBigInt(~items[0].toBigInt()),
+            cost,
+        });
     }) as Operator,
     not: ((args: Program): ProgramOutput => {
         const items = toList(args, 'not', 1);
         const cost = costs.boolBase;
-        return [Program.fromBool(items[0].isNull), cost];
+        return { value: Program.fromBool(items[0].isNull), cost: cost };
     }) as Operator,
     any: ((args: Program): ProgramOutput => {
         const list = toList(args, 'any');
@@ -304,7 +318,7 @@ export const operators = {
                 break;
             }
         }
-        return [Program.fromBool(result), cost];
+        return { value: Program.fromBool(result), cost: cost };
     }) as Operator,
     all: ((args: Program): ProgramOutput => {
         const list = toList(args, 'all');
@@ -316,7 +330,7 @@ export const operators = {
                 break;
             }
         }
-        return [Program.fromBool(result), cost];
+        return { value: Program.fromBool(result), cost: cost };
     }) as Operator,
     softfork: ((args: Program): ProgramOutput => {
         const list = toList(args, 'softfork', [1, Infinity]);
@@ -329,9 +343,23 @@ export const operators = {
             throw new Error(
                 `Cost must be greater than zero in "softfork" operator${args.positionSuffix}.`
             );
-        return [Program.false, cost];
+        return { value: Program.false, cost: cost };
     }) as Operator,
 };
+
+export const defaultOperators = {
+    operators,
+    unknown: defaultUnknownOperator,
+    quote: 'q',
+    apply: 'a',
+};
+
+export function makeDefaultOperators() {
+    return {
+        ...defaultOperators,
+        operators: { ...defaultOperators.operators },
+    };
+}
 
 export function toList(
     program: Program,
@@ -382,10 +410,12 @@ export function limbsForBigInt(value: bigint): number {
 }
 
 export function mallocCost(output: ProgramOutput): ProgramOutput {
-    return [
-        output[0],
-        output[1] + BigInt(output[0].atom.length) * costs.mallocPerByte,
-    ];
+    return {
+        value: output.value,
+        cost:
+            output.cost +
+            BigInt(output.value.atom.length) * costs.mallocPerByte,
+    };
 }
 
 export function binopReduction(
@@ -411,22 +441,13 @@ export function binopReduction(
         cost += costs.logPerArg;
     }
     cost += BigInt(argSize) * costs.logPerByte;
-    return mallocCost([Program.fromBigInt(total), cost]);
+    return mallocCost({ value: Program.fromBigInt(total), cost });
 }
 
-export function runOperator(
+export function defaultUnknownOperator(
     op: Program,
-    args: Program,
-    options: ProgramOptions
+    args: Program
 ): ProgramOutput {
-    const value = op.toBigInt();
-    const keyword: string | undefined = Object.entries(keywords).find(
-        (keyword) => value === keyword[1]
-    )?.[0];
-    if (keyword && keyword in operators)
-        return operators[keyword as keyof typeof operators](args);
-    if (options.strict)
-        throw new Error(`Unknown operator${op.positionSuffix}.`);
     if (
         !op.atom.length ||
         op.atom.slice(0, 2).equals(Buffer.from([0xff, 0xff]))
@@ -491,5 +512,20 @@ export function runOperator(
     cost *= BigInt(costMultiplier);
     if (cost >= 2n ** 32n)
         throw new Error(`Invalid operator${op.positionSuffix}.`);
-    return [Program.nil, cost];
+    return { value: Program.nil, cost: cost };
+}
+
+export function runOperator(
+    op: Program,
+    args: Program,
+    options: RunOptions
+): ProgramOutput {
+    const symbol = op.toBigInt();
+    const keyword =
+        Object.entries(keywords).find((entry) => entry[1] === symbol)?.[0] ??
+        op.toText();
+    if (keyword in options.operators.operators) {
+        const result = options.operators.operators[keyword](args);
+        return result;
+    } else return options.operators.unknown(op, args);
 }

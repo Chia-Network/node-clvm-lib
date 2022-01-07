@@ -13,13 +13,13 @@ export function traversePath(
     environment: Program
 ): ProgramOutput {
     let cost = costs.pathLookupBase + costs.pathLookupPerLeg;
-    if (value.isNull) return [Program.nil, cost];
+    if (value.isNull) return { value: Program.nil, cost };
     let endByteCursor = 0;
     const atom = value.atom;
     while (endByteCursor < atom.length && atom[endByteCursor] === 0)
         endByteCursor++;
     cost += BigInt(endByteCursor) * costs.pathLookupPerZeroByte;
-    if (endByteCursor === atom.length) return [Program.nil, cost];
+    if (endByteCursor === atom.length) return { value: Program.nil, cost };
     const endBitMask = msbMask(atom[endByteCursor]);
     let byteCursor = atom.length - 1;
     let bitMask = 0x01;
@@ -37,5 +37,5 @@ export function traversePath(
             bitMask = 0x01;
         }
     }
-    return [environment, cost];
+    return { value: environment, cost };
 }

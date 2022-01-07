@@ -1,24 +1,39 @@
-import { createHash } from 'crypto';
 import {
-    encodeInt,
-    encodeBigInt,
-    decodeInt,
-    decodeBigInt,
     concatBytes,
+    decodeBigInt,
+    decodeInt,
+    encodeBigInt,
+    encodeInt,
 } from '@rigidity/bls-signatures';
-import { Position } from './Position.js';
-import { tokenizeExpr, tokenStream } from '../utils/parser.js';
-import { ParserError } from './ParserError.js';
-import { deserialize } from '../utils/ir.js';
+import { createHash } from 'crypto';
+import fs from 'fs';
+import path from 'path';
 import { keywords } from '../constants/keywords.js';
-import { instructions } from '../utils/instructions.js';
 import { printable } from '../constants/printable.js';
+import { makeDefaultOperators, Operators } from '../index.js';
+import { makeDoCom } from '../utils/compile.js';
+import { instructions } from '../utils/instructions.js';
+import { deserialize } from '../utils/ir.js';
+import { makeDoOpt } from '../utils/optimize.js';
+import { tokenizeExpr, tokenStream } from '../utils/parser.js';
+import { doRead, doWrite } from '../utils/run.js';
+import { ParserError } from './ParserError.js';
+import { Position } from './Position.js';
 
-export type ProgramOutput = [Program, bigint];
+export interface ProgramOutput {
+    value: Program;
+    cost: bigint;
+}
 
-export interface ProgramOptions {
+export interface RunOptions {
     maxCost?: bigint;
+    operators: Operators;
     strict: boolean;
+}
+
+export interface CompileOptions extends RunOptions {
+    includePaths: string[];
+    include: Program[];
 }
 
 export type Cons = [Program, Program];
@@ -27,7 +42,7 @@ export type Value = Cons | Buffer;
 export type Instruction = (
     instructions: Instruction[],
     stack: Program[],
-    options: ProgramOptions
+    options: RunOptions
 ) => bigint;
 
 export class Program {
@@ -106,7 +121,7 @@ export class Program {
         else throw new ParserError('Unexpected end of source.');
     }
 
-    public static fromList(...programs: Program[]): Program {
+    public static fromList(programs: Program[]): Program {
         let result = Program.nil;
         for (const program of programs.reverse())
             result = Program.cons(program, result);
@@ -168,11 +183,69 @@ export class Program {
                   .digest();
     }
 
+    public hashHex(): string {
+        return this.hash().toString('hex');
+    }
+
+    public compile(options: Partial<CompileOptions> = {}): ProgramOutput {
+        const fullOptions: CompileOptions = {
+            strict: false,
+            operators: makeDefaultOperators(),
+            includePaths: [],
+            include: [],
+            ...options,
+        };
+        if (fullOptions.strict)
+            fullOptions.operators.unknown = (_operator, args) => {
+                throw new Error(
+                    `Unimplemented operator${args.positionSuffix}.`
+                );
+            };
+        function doFullPathForName(args: Program): ProgramOutput {
+            const fileName = args.first.toText();
+            for (const searchPath of fullOptions.includePaths) {
+                const filePath = path.join(searchPath, fileName);
+                const stats = fs.statSync(filePath);
+                if (stats.isFile())
+                    return {
+                        value: Program.fromText(filePath),
+                        cost: 1n,
+                    };
+            }
+            throw new Error(`Can't open ${fileName}${args.positionSuffix}.`);
+        }
+        function runProgram(program: Program, args: Program): ProgramOutput {
+            return program.run(args, fullOptions);
+        }
+        const bindings = {
+            com: makeDoCom(runProgram, fullOptions),
+            opt: makeDoOpt(runProgram),
+            _full_path_for_name: doFullPathForName,
+            _read: doRead,
+            _write: doWrite,
+        };
+        Object.assign(fullOptions.operators.operators, bindings);
+        return runProgram(
+            Program.fromSource('(a (opt (com 2)) 3)'),
+            Program.fromList([this])
+        );
+    }
+
     public run(
         environment: Program,
-        options: Partial<ProgramOptions> = {}
+        options: Partial<RunOptions> = {}
     ): ProgramOutput {
-        const fullOptions: ProgramOptions = { strict: false, ...options };
+        const fullOptions: RunOptions = {
+            strict: false,
+            operators: makeDefaultOperators(),
+            ...options,
+        };
+        if (fullOptions.strict)
+            fullOptions.operators.unknown = (_operator, args) => {
+                throw new Error(
+                    `Unimplemented operator${args.positionSuffix}.`
+                );
+            };
         const instructionStack: Array<Instruction> = [instructions.eval];
         const stack: Array<Program> = [Program.cons(this, environment)];
         let cost = 0n;
@@ -186,7 +259,10 @@ export class Program {
                     }.`
                 );
         }
-        return [stack[stack.length - 1], cost];
+        return {
+            value: stack[stack.length - 1],
+            cost,
+        };
     }
 
     public toBytes(): Buffer {
@@ -254,7 +330,7 @@ export class Program {
             if (this.isNull) return '()';
             else if (this.value.length > 2) {
                 try {
-                    const string = this.value.toString('utf-8');
+                    const string = this.toText();
                     for (let i = 0; i < string.length; i++) {
                         if (!printable.includes(string[i]))
                             return `0x${this.toHex()}`;
@@ -353,9 +429,13 @@ export class Program {
     }
 
     public equals(value: Program): boolean {
-        return this.isAtom === value.isAtom && this.isAtom
-            ? this.atom.equals(value.atom)
-            : this.first.equals(value.first) && this.rest.equals(value.rest);
+        return (
+            this.isAtom === value.isAtom &&
+            (this.isAtom
+                ? this.atom.equals(value.atom)
+                : this.first.equals(value.first) &&
+                  this.rest.equals(value.rest))
+        );
     }
 
     public toString(): string {
