@@ -158,7 +158,7 @@ export class Program {
         return this;
     }
 
-    public curry(...args: Program[]): Program {
+    public curry(args: Program[]): Program {
         let current = Program.fromBigInt(keywords.q);
         for (const argument of args.reverse()) {
             current = Program.cons(
