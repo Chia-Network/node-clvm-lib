@@ -3,7 +3,6 @@ import { ParserError } from '../types/ParserError.js';
 import { Program } from '../types/Program.js';
 
 export function deserialize(program: number[]): Program {
-    console.log(program.map((item) => item.toString(16)));
     const sizeBytes: Array<number> = [];
     if (program[0] <= 0x7f) return Program.fromBytes(Buffer.from([program[0]]));
     else if (program[0] <= 0xbf) sizeBytes.push(program[0] & 0x3f);

@@ -1,7 +1,7 @@
 {
     "name": "@rigidity/clvm",
     "author": "rigidity",
-    "version": "2.2.0",
+    "version": "2.2.1",
     "description": "The Chialisp Virtual Machine in TypeScript.",
     "repository": "https://github.com/Rigidity/clvm.git",
     "main": "dist/src/index.js",
