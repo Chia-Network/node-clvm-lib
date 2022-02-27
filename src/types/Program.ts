@@ -50,7 +50,7 @@ export class Program {
     public static false = Program.fromBytes(Buffer.from([]));
     public static nil = Program.false;
 
-    private value: Value;
+    public readonly value: Value;
     public position?: Position;
 
     public get atom(): Buffer {
@@ -145,7 +145,7 @@ export class Program {
         return Program.deserialize(Buffer.from(hex, 'hex'));
     }
 
-    private constructor(value: Value) {
+    constructor(value: Value) {
         this.value = value;
     }
 
