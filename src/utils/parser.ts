@@ -1,8 +1,8 @@
-import { keywords } from '../constants/keywords.js';
-import { ParserError } from '../types/ParserError.js';
-import { Position } from '../types/Position.js';
-import { Program } from '../types/Program.js';
-import { Token } from '../types/Token.js';
+import { keywords } from '../constants/keywords';
+import { ParserError } from '../types/ParserError';
+import { Position } from '../types/Position';
+import { Program } from '../types/Program';
+import { Token } from '../types/Token';
 
 export function next(tokens: Token[]): Token | undefined {
     tokens.shift();
@@ -42,7 +42,7 @@ export function consumeUntilWhitespace(text: string, index: number): Token {
 export function tokenizeCons(source: string, tokens: Token[]): Program {
     let token = tokens[0];
     if (token.text === ')')
-        return Program.fromBytes(Buffer.from([])).at(
+        return Program.fromBytes(Uint8Array.from([])).at(
             new Position(source, token.index)
         );
     const consStart = token.index;

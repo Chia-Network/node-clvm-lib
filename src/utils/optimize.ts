@@ -1,17 +1,18 @@
-import { quoteAtom, raiseAtom } from '../constants/atoms.js';
-import { keywords, Program } from '../index.js';
-import { NodePath } from '../types/NodePath.js';
-import { Eval, quoteAsProgram } from './helpers.js';
-import { match } from './match.js';
-import { Operator } from './operators.js';
+import { bytesEqual } from '@rigidity/bls-signatures';
+import { quoteAtom, raiseAtom } from '../constants/atoms';
+import { keywords, Program } from '../index';
+import { NodePath } from '../types/NodePath';
+import { Eval, quoteAsProgram } from './helpers';
+import { match } from './match';
+import { Operator } from './operators';
 
 export function seemsConstant(program: Program): boolean {
     if (!program.isCons) return program.isNull;
     const operator = program.first;
     if (!operator.isCons) {
         const value = operator.atom;
-        if (value.equals(quoteAtom)) return true;
-        else if (value.equals(raiseAtom)) return false;
+        if (bytesEqual(value, quoteAtom)) return true;
+        else if (bytesEqual(value, raiseAtom)) return false;
     } else if (!seemsConstant(operator)) return false;
     return program.rest.toList().every((item) => seemsConstant(item));
 }
@@ -85,7 +86,7 @@ export function subArgs(program: Program, args: Program): Program {
     }
     let first = program.first;
     if (first.isCons) first = subArgs(first, args);
-    else if (first.atom.equals(quoteAtom)) {
+    else if (bytesEqual(first.atom, quoteAtom)) {
         return program;
     }
     return Program.fromList([
@@ -118,7 +119,7 @@ export function varChangeOptimizerConsEval(
     const nonConstantCount = optOperands.filter(
         (item) =>
             item.isCons &&
-            (item.first.isCons || !item.first.atom.equals(quoteAtom))
+            (item.first.isCons || !bytesEqual(item.first.atom, quoteAtom))
     ).length;
     if (nonConstantCount < 1) {
         return Program.fromList(optOperands);
@@ -134,7 +135,7 @@ export function childrenOptimizer(
         return program;
     }
     const operator = program.first;
-    if (operator.isAtom && operator.atom.equals(quoteAtom)) {
+    if (operator.isAtom && bytesEqual(operator.atom, quoteAtom)) {
         return program;
     }
     return Program.fromList(

@@ -1,16 +1,17 @@
 import {
     bigIntToBytes,
+    bytesEqual,
     bytesToBigInt,
     bytesToInt,
     defaultEc,
+    hash256,
     JacobianPoint,
     mod,
     PrivateKey,
 } from '@rigidity/bls-signatures';
-import { createHash } from 'crypto';
 import { keywords } from '..';
-import { costs } from '../constants/cost.js';
-import { Program, ProgramOutput, RunOptions } from '../types/Program.js';
+import { costs } from '../constants/cost';
+import { Program, ProgramOutput, RunOptions } from '../types/Program';
 
 export type Operator = (args: Program) => ProgramOutput;
 
@@ -48,7 +49,7 @@ export const operators = {
     '=': ((args: Program): ProgramOutput => {
         const list = toList(args, '=', 2, 'atom');
         return {
-            value: Program.fromBool(list[0].atom.equals(list[1].atom)),
+            value: Program.fromBool(bytesEqual(list[0].atom, list[1].atom)),
             cost:
                 costs.eqBase +
                 (BigInt(list[0].atom.length) + BigInt(list[1].atom.length)) *
@@ -67,9 +68,7 @@ export const operators = {
         }
         cost += BigInt(argLength) * costs.sha256PerByte;
         return mallocCost({
-            value: Program.fromBytes(
-                createHash('sha256').update(Buffer.from(bytes)).digest()
-            ),
+            value: Program.fromBytes(hash256(Uint8Array.from(bytes))),
             cost,
         });
     }) as Operator,
@@ -242,7 +241,7 @@ export const operators = {
         }
         cost += BigInt(bytes.length) * costs.concatPerByte;
         return mallocCost({
-            value: Program.fromBytes(Buffer.from(bytes)),
+            value: Program.fromBytes(Uint8Array.from(bytes)),
             cost,
         });
     }) as Operator,
@@ -450,7 +449,7 @@ export function defaultUnknownOperator(
 ): ProgramOutput {
     if (
         !op.atom.length ||
-        op.atom.slice(0, 2).equals(Buffer.from([0xff, 0xff]))
+        bytesEqual(op.atom.slice(0, 2), Uint8Array.from([0xff, 0xff]))
     )
         throw new Error(`Reserved operator${op.positionSuffix}.`);
     if (op.atom.length > 5)

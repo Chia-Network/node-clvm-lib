@@ -1,5 +1,5 @@
 import { encodeBigInt } from '@rigidity/bls-signatures';
-import { keywords } from './keywords.js';
+import { keywords } from './keywords';
 
 export const quoteAtom = encodeBigInt(keywords['q']);
 export const applyAtom = encodeBigInt(keywords['a']);

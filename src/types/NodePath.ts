@@ -27,12 +27,12 @@ export class NodePath {
         if (index < 0n) {
             const byteCount = (bigIntBitLength(index) + 7) >> 3;
             const blob = bigIntToBytes(index, byteCount, 'big', true);
-            index = bytesToBigInt(Buffer.from([0, ...blob]), 'big', false);
+            index = bytesToBigInt(Uint8Array.from([0, ...blob]), 'big', false);
         }
         this.index = index;
     }
 
-    public asPath(): Buffer {
+    public asPath(): Uint8Array {
         const byteCount = (bigIntBitLength(this.index) + 7) >> 3;
         return bigIntToBytes(this.index, byteCount, 'big');
     }

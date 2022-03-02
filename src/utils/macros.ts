@@ -1,5 +1,5 @@
-import { Program } from '../index.js';
-import { Eval } from './helpers.js';
+import { Program } from '../index';
+import { Eval } from './helpers';
 
 const defaultMacroSources = [
     `

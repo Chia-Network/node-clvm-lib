@@ -1,10 +1,10 @@
-import { consAtom } from '../constants/atoms.js';
-import { Program } from '../index.js';
-import { BetterSet } from '../types/BetterSet.js';
-import { NodePath } from '../types/NodePath.js';
+import { consAtom } from '../constants/atoms';
+import { Program } from '../index';
+import { BetterSet } from '../types/BetterSet';
+import { NodePath } from '../types/NodePath';
 import { compareStrings } from './compare';
-import { Eval, evalAsProgram, Group, quoteAsProgram } from './helpers.js';
-import { optimizeProgram } from './optimize.js';
+import { Eval, evalAsProgram, Group, quoteAsProgram } from './helpers';
+import { optimizeProgram } from './optimize';
 
 const mainName = '';
 

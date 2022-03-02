@@ -1,24 +1,17 @@
-import { encodeBigInt } from '@rigidity/bls-signatures';
-import { applyAtom, consAtom, quoteAtom } from '../constants/atoms.js';
-import { keywords, Program, ProgramOutput } from '../index.js';
-import { BetterSet } from '../types/BetterSet.js';
-import { NodePath } from '../types/NodePath.js';
-import {
-    brunAsProgram,
-    Eval,
-    evalAsProgram,
-    quoteAsProgram,
-} from './helpers.js';
-import { defaultMacroLookup } from './macros.js';
-import { compileMod } from './mod.js';
-import { Operator } from './operators.js';
+import { bytesEqual, encodeBigInt, toHex } from '@rigidity/bls-signatures';
+import { applyAtom, consAtom, quoteAtom } from '../constants/atoms';
+import { keywords, Program, ProgramOutput } from '../index';
+import { BetterSet } from '../types/BetterSet';
+import { NodePath } from '../types/NodePath';
+import { brunAsProgram, Eval, evalAsProgram, quoteAsProgram } from './helpers';
+import { defaultMacroLookup } from './macros';
+import { compileMod } from './mod';
+import { Operator } from './operators';
 
 const passThroughOperators = new BetterSet([
-    ...Object.values(keywords).map((value) =>
-        encodeBigInt(value).toString('hex')
-    ),
-    Buffer.from('com', 'utf-8').toString('hex'),
-    Buffer.from('opt', 'utf-8').toString('hex'),
+    ...Object.values(keywords).map((value) => toHex(encodeBigInt(value))),
+    toHex(new TextEncoder().encode('com')),
+    toHex(new TextEncoder().encode('opt')),
 ]);
 
 export function compileQq(
@@ -199,7 +192,7 @@ export function doComProgram(
             Program.fromBytes(NodePath.top.asPath())
         );
     }
-    if (operator.atom.equals(quoteAtom)) {
+    if (bytesEqual(operator.atom, quoteAtom)) {
         return program;
     }
     const compiledArgs = program.rest
@@ -209,7 +202,7 @@ export function doComProgram(
         );
     let result = Program.fromList([operator, ...compiledArgs]);
     if (
-        passThroughOperators.has(Buffer.from(atom, 'utf-8').toString('hex')) ||
+        passThroughOperators.has(toHex(new TextEncoder().encode(atom))) ||
         atom.startsWith('_')
     ) {
         return result;

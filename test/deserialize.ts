@@ -1,5 +1,5 @@
 import { assert, expect } from 'chai';
-import { Program } from '../src/index.js';
+import { Program } from '../src';
 
 const deserializeTests: Map<string, string | null> = new Map();
 

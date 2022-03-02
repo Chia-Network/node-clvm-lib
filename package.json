@@ -1,28 +1,77 @@
 {
     "name": "@rigidity/clvm",
     "author": "rigidity",
-    "version": "2.2.3",
-    "description": "The Chialisp Virtual Machine in TypeScript.",
+    "version": "3.0.0",
+    "description": "A browser friendly implementation of clvm.",
     "repository": "https://github.com/Rigidity/clvm.git",
-    "main": "dist/src/index.js",
-    "types": "dist/src/index.d.ts",
+    "source": "src/index.ts",
+    "main": "dist/cjs/index.js",
+    "module": "dist/esm/index.js",
+    "bundle": "dist/bundle/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        "import": "./dist/esm/index.js",
+        "require": "./dist/cjs/index.js"
+    },
     "license": "MIT",
+    "scripts": {
+        "test": "mocha './dist/test/**/*.js' --require source-map-support/register --recursive --timeout 0",
+        "build": "parcel build",
+        "watch": "parcel watch"
+    },
+    "targets": {
+        "main": {
+            "sourceMap": {
+                "inline": true
+            }
+        },
+        "module": {
+            "sourceMap": {
+                "inline": true
+            }
+        },
+        "bundle": {
+            "context": "browser",
+            "outputFormat": "global",
+            "source": "src/browser.ts",
+            "includeNodeModules": [
+                "@rigidity/bls-signatures",
+                "jssha",
+                "randombytes"
+            ],
+            "sourceMap": {
+                "inline": true
+            }
+        },
+        "test": {
+            "context": "node",
+            "source": [
+                "test/compile.ts",
+                "test/deserialize.ts",
+                "test/run.ts",
+                "test/serialize.ts"
+            ],
+            "sourceMap": {
+                "inline": true
+            }
+        }
+    },
     "files": [
         "dist",
         "include"
     ],
-    "scripts": {
-        "test": "mocha './dist/test/**/*.js' --require source-map-support/register --recursive --timeout 0"
-    },
     "devDependencies": {
+        "@parcel/packager-ts": "2.3.2",
+        "@parcel/transformer-typescript-types": "2.3.2",
         "@types/chai": "^4.3.0",
         "@types/mocha": "^9.0.0",
-        "@types/node": "^17.0.8",
         "mocha": "^9.1.3",
-        "source-map-support": "^0.5.21"
+        "parcel": "^2.3.2",
+        "source-map-support": "^0.5.21",
+        "typescript": ">=3.0.0"
     },
     "dependencies": {
-        "@rigidity/bls-signatures": "^1.1.0",
+        "@rigidity/bls-signatures": "^2.0.1",
         "chai": "^4.3.4"
     }
 }

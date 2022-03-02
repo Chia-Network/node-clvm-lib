@@ -1,5 +1,5 @@
-import { keywords, Program, ProgramOutput } from '../index.js';
-import { NodePath } from '../types/NodePath.js';
+import { keywords, Program, ProgramOutput } from '../index';
+import { NodePath } from '../types/NodePath';
 
 export type Eval = (program: Program, args: Program) => ProgramOutput;
 export type Group = Record<string, Program>;

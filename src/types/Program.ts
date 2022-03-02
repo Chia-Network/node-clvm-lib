@@ -1,24 +1,24 @@
 import {
+    bytesEqual,
     concatBytes,
     decodeBigInt,
     decodeInt,
     encodeBigInt,
     encodeInt,
+    fromHex,
+    hash256,
+    toHex,
 } from '@rigidity/bls-signatures';
-import { createHash } from 'crypto';
-import fs from 'fs';
-import path from 'path';
-import { keywords } from '../constants/keywords.js';
-import { printable } from '../constants/printable.js';
-import { makeDefaultOperators, Operators } from '../index.js';
-import { makeDoCom } from '../utils/compile.js';
-import { instructions } from '../utils/instructions.js';
-import { deserialize } from '../utils/ir.js';
-import { makeDoOpt } from '../utils/optimize.js';
-import { tokenizeExpr, tokenStream } from '../utils/parser.js';
-import { doRead, doWrite } from '../utils/run.js';
-import { ParserError } from './ParserError.js';
-import { Position } from './Position.js';
+import { keywords } from '../constants/keywords';
+import { printable } from '../constants/printable';
+import { makeDefaultOperators, Operators } from '../index';
+import { makeDoCom } from '../utils/compile';
+import { instructions } from '../utils/instructions';
+import { deserialize } from '../utils/ir';
+import { makeDoOpt } from '../utils/optimize';
+import { tokenizeExpr, tokenStream } from '../utils/parser';
+import { ParserError } from './ParserError';
+import { Position } from './Position';
 
 export interface ProgramOutput {
     value: Program;
@@ -32,11 +32,11 @@ export interface RunOptions {
 }
 
 export interface CompileOptions extends RunOptions {
-    includePaths: string[];
+    includeFilePaths: Record<string, Record<string, string>>;
 }
 
 export type Cons = [Program, Program];
-export type Value = Cons | Buffer;
+export type Value = Cons | Uint8Array;
 
 export type Instruction = (
     instructions: Instruction[],
@@ -46,17 +46,17 @@ export type Instruction = (
 
 export class Program {
     public static cost = 11000000000;
-    public static true = Program.fromBytes(Buffer.from([1]));
-    public static false = Program.fromBytes(Buffer.from([]));
+    public static true = Program.fromBytes(Uint8Array.from([1]));
+    public static false = Program.fromBytes(Uint8Array.from([]));
     public static nil = Program.false;
 
     public readonly value: Value;
     public position?: Position;
 
-    public get atom(): Buffer {
+    public get atom(): Uint8Array {
         if (!this.isAtom)
             throw new Error(`Expected atom${this.positionSuffix}.`);
-        return this.value as Buffer;
+        return this.value as Uint8Array;
     }
 
     public get cons(): Cons {
@@ -74,7 +74,7 @@ export class Program {
     }
 
     public get isAtom() {
-        return this.value instanceof Buffer;
+        return this.value instanceof Uint8Array;
     }
 
     public get isCons() {
@@ -89,12 +89,12 @@ export class Program {
         return new Program([first, rest]);
     }
 
-    public static fromBytes(bytes: Buffer): Program {
+    public static fromBytes(bytes: Uint8Array): Program {
         return new Program(bytes);
     }
 
     public static fromHex(hex: string): Program {
-        return new Program(Buffer.from(hex, 'hex'));
+        return new Program(fromHex(hex));
     }
 
     public static fromBool(value: boolean): Program {
@@ -110,7 +110,7 @@ export class Program {
     }
 
     public static fromText(text: string): Program {
-        return new Program(Buffer.from(text, 'utf-8'));
+        return new Program(new TextEncoder().encode(text));
     }
 
     public static fromSource(source: string): Program {
@@ -120,10 +120,6 @@ export class Program {
         else throw new ParserError('Unexpected end of source.');
     }
 
-    public static fromFile(file: string): Program {
-        return Program.fromSource(fs.readFileSync(file, 'utf-8').trim());
-    }
-
     public static fromList(programs: Program[]): Program {
         let result = Program.nil;
         for (const program of programs.reverse())
@@ -131,18 +127,14 @@ export class Program {
         return result;
     }
 
-    public static deserialize(bytes: Buffer): Program {
+    public static deserialize(bytes: Uint8Array): Program {
         const program = [...bytes];
         if (!program.length) throw new ParserError('Unexpected end of source.');
         return deserialize(program);
     }
 
-    public static deserializeFile(file: string): Program {
-        return Program.deserializeHex(fs.readFileSync(file, 'utf-8').trim());
-    }
-
     public static deserializeHex(hex: string): Program {
-        return Program.deserialize(Buffer.from(hex, 'hex'));
+        return Program.deserialize(fromHex(hex));
     }
 
     constructor(value: Value) {
@@ -174,24 +166,20 @@ export class Program {
         );
     }
 
-    public hash(): Buffer {
+    public hash(): Uint8Array {
         return this.isAtom
-            ? createHash('sha256')
-                  .update(concatBytes(Buffer.from([1]), this.atom))
-                  .digest()
-            : createHash('sha256')
-                  .update(
-                      concatBytes(
-                          Buffer.from([2]),
-                          this.first.hash(),
-                          this.rest.hash()
-                      )
+            ? hash256(concatBytes(Uint8Array.from([1]), this.atom))
+            : hash256(
+                  concatBytes(
+                      Uint8Array.from([2]),
+                      this.first.hash(),
+                      this.rest.hash()
                   )
-                  .digest();
+              );
     }
 
     public hashHex(): string {
-        return this.hash().toString('hex');
+        return toHex(this.hash());
     }
 
     public define(program: Program): Program {
@@ -218,7 +206,7 @@ export class Program {
         const fullOptions: CompileOptions = {
             strict: false,
             operators: makeDefaultOperators(),
-            includePaths: [],
+            includeFilePaths: {},
             ...options,
         };
         if (fullOptions.strict)
@@ -229,17 +217,38 @@ export class Program {
             };
         function doFullPathForName(args: Program): ProgramOutput {
             const fileName = args.first.toText();
-            for (const searchPath of fullOptions.includePaths) {
-                const filePath = path.join(searchPath, fileName);
-                const stats = fs.statSync(filePath);
-                if (stats.isFile())
+            for (const [path, files] of Object.entries(
+                fullOptions.includeFilePaths
+            )) {
+                if (fileName in files)
                     return {
-                        value: Program.fromText(filePath),
+                        value: Program.fromText(`${path}/${fileName}`),
                         cost: 1n,
                     };
             }
             throw new Error(`Can't open ${fileName}${args.positionSuffix}.`);
         }
+        function doRead(args: Program): ProgramOutput {
+            const fileName = args.first.toText();
+            let source: string | null = null;
+            for (const [path, files] of Object.entries(
+                fullOptions.includeFilePaths
+            )) {
+                for (const [file, content] of Object.entries(files)) {
+                    if (fileName === `${path}/${file}`) source = content;
+                }
+            }
+            if (source === null)
+                throw new Error(
+                    `Can't open ${fileName}${args.positionSuffix}.`
+                );
+            return { value: Program.fromSource(source), cost: 1n };
+        }
+        // Not functional, due to browser support. May reimplement later.
+        function doWrite(_args: Program): ProgramOutput {
+            return { value: Program.nil, cost: 1n };
+        }
+
         function runProgram(program: Program, args: Program): ProgramOutput {
             return program.run(args, fullOptions);
         }
@@ -291,7 +300,7 @@ export class Program {
         };
     }
 
-    public toBytes(): Buffer {
+    public toBytes(): Uint8Array {
         if (this.isCons)
             throw new Error(
                 `Cannot convert ${this.toString()} to hex${
@@ -308,7 +317,7 @@ export class Program {
                     this.positionSuffix
                 }.`
             );
-        return this.value.toString('hex');
+        return toHex(this.atom);
     }
 
     public toBool(): boolean {
@@ -348,7 +357,7 @@ export class Program {
                     this.positionSuffix
                 }.`
             );
-        return this.value.toString('utf-8');
+        return new TextDecoder().decode(this.atom);
     }
 
     public toSource(showKeywords: boolean = true): string {
@@ -368,7 +377,7 @@ export class Program {
                 } catch {
                     return `0x${this.toHex()}`;
                 }
-            } else if (encodeInt(decodeInt(this.atom)).equals(this.atom))
+            } else if (bytesEqual(encodeInt(decodeInt(this.atom)), this.atom))
                 return decodeInt(this.atom).toString();
             else return `0x${this.toHex()}`;
         } else {
@@ -393,10 +402,6 @@ export class Program {
         }
     }
 
-    public toFile(file: string, showKeywords: boolean = true): void {
-        fs.writeFileSync(file, this.toSource(showKeywords), 'utf-8');
-    }
-
     public toList(strict: boolean = false): Program[] {
         const result: Array<Program> = [];
         let current: Program = this;
@@ -410,9 +415,9 @@ export class Program {
         return result;
     }
 
-    public serialize(): Buffer {
+    public serialize(): Uint8Array {
         if (this.isAtom) {
-            if (this.isNull) return Buffer.from([0x80]);
+            if (this.isNull) return Uint8Array.from([0x80]);
             else if (this.atom.length === 1 && this.atom[0] <= 0x7f)
                 return this.atom;
             else {
@@ -444,29 +449,25 @@ export class Program {
                         }.`
                     );
                 for (const byte of this.atom) result.push(byte);
-                return Buffer.from(result);
+                return Uint8Array.from(result);
             }
         } else {
             const result = [0xff];
             for (const byte of this.first.serialize()) result.push(byte);
             for (const byte of this.rest.serialize()) result.push(byte);
-            return Buffer.from(result);
+            return Uint8Array.from(result);
         }
     }
 
     public serializeHex(): string {
-        return this.serialize().toString('hex');
-    }
-
-    public serializeFile(file: string): void {
-        fs.writeFileSync(file, this.serializeHex(), 'utf-8');
+        return toHex(this.serialize());
     }
 
     public equals(value: Program): boolean {
         return (
             this.isAtom === value.isAtom &&
             (this.isAtom
-                ? this.atom.equals(value.atom)
+                ? bytesEqual(this.atom, value.atom)
                 : this.first.equals(value.first) &&
                   this.rest.equals(value.rest))
         );

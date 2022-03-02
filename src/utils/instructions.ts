@@ -1,8 +1,9 @@
+import { bytesEqual } from '@rigidity/bls-signatures';
 import { applyAtom, quoteAtom } from '../constants/atoms';
-import { costs } from '../constants/cost.js';
-import { Instruction, Program } from '../types/Program.js';
-import { traversePath } from './environment.js';
-import { runOperator } from './operators.js';
+import { costs } from '../constants/cost';
+import { Instruction, Program } from '../types/Program';
+import { traversePath } from './environment';
+import { runOperator } from './operators';
 
 export const instructions = {
     swap: ((_instructionStack, stack, _options) => {
@@ -39,7 +40,7 @@ export const instructions = {
             return costs.apply;
         }
         let operandList = program.rest;
-        if (op.atom.equals(quoteAtom)) {
+        if (bytesEqual(op.atom, quoteAtom)) {
             stack.push(operandList);
             return costs.quote;
         }
@@ -62,7 +63,7 @@ export const instructions = {
         const op = stack.pop()!;
         if (op.isCons)
             throw new Error(`An internal error occurred${op.positionSuffix}.`);
-        if (op.atom.equals(applyAtom)) {
+        if (bytesEqual(op.atom, applyAtom)) {
             const args = operandList.toList();
             if (args.length !== 2)
                 throw new Error(

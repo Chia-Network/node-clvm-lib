@@ -1,5 +1,5 @@
-import { costs } from '../constants/cost.js';
-import { Program, ProgramOutput } from '../types/Program.js';
+import { costs } from '../constants/cost';
+import { Program, ProgramOutput } from '../types/Program';
 
 export function msbMask(byte: number): number {
     byte |= byte >> 1;

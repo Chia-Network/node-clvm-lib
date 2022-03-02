@@ -1,10 +1,11 @@
 import { decodeInt } from '@rigidity/bls-signatures';
-import { ParserError } from '../types/ParserError.js';
-import { Program } from '../types/Program.js';
+import { ParserError } from '../types/ParserError';
+import { Program } from '../types/Program';
 
 export function deserialize(program: number[]): Program {
     const sizeBytes: Array<number> = [];
-    if (program[0] <= 0x7f) return Program.fromBytes(Buffer.from([program[0]]));
+    if (program[0] <= 0x7f)
+        return Program.fromBytes(Uint8Array.from([program[0]]));
     else if (program[0] <= 0xbf) sizeBytes.push(program[0] & 0x3f);
     else if (program[0] <= 0xdf) {
         sizeBytes.push(program[0] & 0x1f);
@@ -47,7 +48,7 @@ export function deserialize(program: number[]): Program {
         const rest = deserialize(program);
         return Program.cons(first, rest);
     } else throw new ParserError('Invalid encoding.');
-    const size = decodeInt(Buffer.from(sizeBytes));
+    const size = decodeInt(Uint8Array.from(sizeBytes));
     let bytes: Array<number> = [];
     for (let i = 0; i < size; i++) {
         program.shift();
@@ -56,5 +57,5 @@ export function deserialize(program: number[]): Program {
         }
         bytes.push(program[0]);
     }
-    return Program.fromBytes(Buffer.from(bytes));
+    return Program.fromBytes(Uint8Array.from(bytes));
 }

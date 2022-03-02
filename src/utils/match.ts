@@ -1,8 +1,9 @@
-import { Program } from '../index.js';
-import { Group } from './helpers.js';
+import { bytesEqual } from '@rigidity/bls-signatures';
+import { Program } from '../index';
+import { Group } from './helpers';
 
-const atomMatch = Buffer.from('$', 'utf-8');
-const sexpMatch = Buffer.from(':', 'utf-8');
+const atomMatch = new TextEncoder().encode('$');
+const sexpMatch = new TextEncoder().encode(':');
 
 export function unifyBindings(
     bindings: Group,
@@ -23,21 +24,21 @@ export function match(
 ): Group | null {
     if (!pattern.isCons) {
         if (sexp.isCons) return null;
-        return pattern.atom.equals(sexp.atom) ? knownBindings : null;
+        return bytesEqual(pattern.atom, sexp.atom) ? knownBindings : null;
     }
     const left = pattern.first;
     const right = pattern.rest;
-    if (left.isAtom && left.atom.equals(atomMatch)) {
+    if (left.isAtom && bytesEqual(left.atom, atomMatch)) {
         if (sexp.isCons) return null;
-        if (right.isAtom && right.atom.equals(atomMatch)) {
-            if (sexp.atom.equals(atomMatch)) return {};
+        if (right.isAtom && bytesEqual(right.atom, atomMatch)) {
+            if (bytesEqual(sexp.atom, atomMatch)) return {};
             return null;
         }
         return unifyBindings(knownBindings, right.toText(), sexp);
     }
-    if (left.isAtom && left.atom.equals(sexpMatch)) {
-        if (right.isAtom && right.atom.equals(sexpMatch)) {
-            if (sexp.atom.equals(sexpMatch)) return {};
+    if (left.isAtom && bytesEqual(left.atom, sexpMatch)) {
+        if (right.isAtom && bytesEqual(right.atom, sexpMatch)) {
+            if (bytesEqual(sexp.atom, sexpMatch)) return {};
             return null;
         }
         return unifyBindings(knownBindings, right.toText(), sexp);
