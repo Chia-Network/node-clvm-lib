@@ -1,7 +1,7 @@
 {
     "name": "@rigidity/clvm",
     "author": "rigidity",
-    "version": "3.0.1",
+    "version": "3.0.2",
     "description": "A browser friendly implementation of clvm.",
     "repository": "https://github.com/Rigidity/clvm.git",
     "source": "src/index.ts",
