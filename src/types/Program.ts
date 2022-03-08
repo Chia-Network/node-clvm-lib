@@ -15,6 +15,7 @@ import { makeDefaultOperators, Operators } from '../index';
 import { makeDoCom } from '../utils/compile';
 import { instructions } from '../utils/instructions';
 import { deserialize } from '../utils/ir';
+import { match } from '../utils/match';
 import { makeDoOpt } from '../utils/optimize';
 import { tokenizeExpr, tokenStream } from '../utils/parser';
 import { ParserError } from './ParserError';
@@ -151,19 +152,37 @@ export class Program {
     }
 
     public curry(args: Program[]): Program {
-        let current = Program.fromBigInt(keywords.q);
-        for (const argument of args.reverse()) {
-            current = Program.cons(
-                Program.fromBigInt(keywords.c),
-                Program.cons(
-                    Program.cons(Program.fromBigInt(keywords.q), argument),
-                    Program.cons(current, Program.nil)
-                )
-            );
-        }
         return Program.fromSource(
-            `(a (q . ${this.toString()}) ${current.toString()})`
+            '(a (q #a 4 (c 2 (c 5 (c 7 0)))) (c (q (c (q . 2) (c (c (q . 1) 5) (c (a 6 (c 2 (c 11 (q 1)))) 0))) #a (i 5 (q 4 (q . 4) (c (c (q . 1) 9) (c (a 6 (c 2 (c 13 (c 11 0)))) 0))) (q . 11)) 1) 1))'
+        ).run(Program.cons(this, Program.fromList(args))).value;
+    }
+
+    public uncurry(): [Program, Program[]] | null {
+        const uncurryPatternFunction = Program.fromSource(
+            '(a (q . (: . function)) (: . core))'
         );
+        const uncurryPatternCore = Program.fromSource(
+            '(c (q . (: . parm)) (: . core))'
+        );
+
+        let result = match(uncurryPatternFunction, this);
+        if (!result) return null;
+
+        const fn = result.function;
+        let core = result.core;
+
+        const args: Array<Program> = [];
+
+        while (true) {
+            result = match(uncurryPatternCore, core);
+            if (!result) break;
+
+            args.push(result.parm);
+            core = result.core;
+        }
+
+        if (core.isAtom && core.toBigInt() === 1n) return [fn, args];
+        return null;
     }
 
     public hash(): Uint8Array {
