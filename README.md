@@ -139,6 +139,10 @@ This represents a program or value in Chialisp or compiled clvm. It is the main 
 -   `args` is an `Array<Program>`.
 -   Returns a `Program` containing the current one with each argument applied to it in reverse, precommitting them in the final solution.
 
+### uncurry()
+
+-   Returns a `[Program, Array<Program>]` containing the mod and curried in arguments.
+
 ### hash()
 
 -   Returns a `Uint8Array` of the tree hash of the program. Hashed with `1` for atoms, and `2` for cons pairs.
