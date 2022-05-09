@@ -600,10 +600,10 @@
     chrome-trace-event "^1.0.2"
     nullthrows "^1.1.1"
 
-"@rigidity/bls-signatures@^2.0.1":
-  version "2.0.2"
-  resolved "https://registry.yarnpkg.com/@rigidity/bls-signatures/-/bls-signatures-2.0.2.tgz#9b0df94e4c49b92fd42291fe1478d89eb75f39a7"
-  integrity sha512-p7uHCUdPeyscQYODTOtn9eVNPRBnWlvmQx4IJqIE5sInM32VOaVvXH/XGZ1ZgYAKUZCiheAg0Kla0ao82Ohflg==
+"@rigidity/bls-signatures@^2.0.3":
+  version "2.0.3"
+  resolved "https://registry.yarnpkg.com/@rigidity/bls-signatures/-/bls-signatures-2.0.3.tgz#178e96cfaabd73c593ac215629a37623ea9e4513"
+  integrity sha512-ZNV5mhtBRxZ6IzRbEbBNB6vuv7mKhdX7hJYd3gLdw5y6x5S8waKJhcizRoiUWm8wn9AnefsQymWGdSCgC51d7g==
   dependencies:
     chai "^4.3.4"
     jssha "^3.2.0"
