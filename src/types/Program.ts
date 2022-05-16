@@ -7,6 +7,8 @@ import {
     encodeInt,
     fromHex,
     hash256,
+    JacobianPoint,
+    PrivateKey,
     toHex,
 } from '@rigidity/bls-signatures';
 import { keywords } from '../constants/keywords';
@@ -92,6 +94,14 @@ export class Program {
 
     public static fromBytes(bytes: Uint8Array): Program {
         return new Program(bytes);
+    }
+
+    public static fromJacobianPoint(jacobianPoint: JacobianPoint): Program {
+        return new Program(jacobianPoint.toBytes());
+    }
+
+    public static fromPrivateKey(privateKey: PrivateKey): Program {
+        return new Program(privateKey.toBytes());
     }
 
     public static fromHex(hex: string): Program {
@@ -327,6 +337,28 @@ export class Program {
                 }.`
             );
         return this.atom;
+    }
+
+    public toJacobianPoint(): JacobianPoint {
+        if (this.isCons || (this.atom.length !== 48 && this.atom.length !== 96))
+            throw new Error(
+                `Cannot convert ${this.toString()} to JacobianPoint${
+                    this.positionSuffix
+                }.`
+            );
+        return this.atom.length === 48
+            ? JacobianPoint.fromBytesG1(this.atom)
+            : JacobianPoint.fromBytesG2(this.atom);
+    }
+
+    public toPrivateKey(): PrivateKey {
+        if (this.isCons)
+            throw new Error(
+                `Cannot convert ${this.toString()} to private key${
+                    this.positionSuffix
+                }.`
+            );
+        return PrivateKey.fromBytes(this.atom);
     }
 
     public toHex(): string {
