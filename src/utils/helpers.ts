@@ -1,5 +1,6 @@
-import { keywords, Program, ProgramOutput } from '../index';
+import { keywords } from '../constants/keywords';
 import { NodePath } from '../types/NodePath';
+import { Program, ProgramOutput } from '../types/Program';
 
 export type Eval = (program: Program, args: Program) => ProgramOutput;
 export type Group = Record<string, Program>;

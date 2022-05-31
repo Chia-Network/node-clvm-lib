@@ -1,4 +1,4 @@
-import { costs } from '../constants/cost';
+import { costs } from '../constants/costs';
 import { Program, ProgramOutput } from '../types/Program';
 
 export function msbMask(byte: number): number {

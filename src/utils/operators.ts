@@ -9,8 +9,8 @@ import {
     mod,
     PrivateKey,
 } from '@rigidity/bls-signatures';
-import { keywords } from '..';
-import { costs } from '../constants/cost';
+import { costs } from '../constants/costs';
+import { keywords } from '../constants/keywords';
 import { Program, ProgramOutput, RunOptions } from '../types/Program';
 
 export type Operator = (args: Program) => ProgramOutput;

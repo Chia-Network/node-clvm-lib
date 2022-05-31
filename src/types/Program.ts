@@ -13,11 +13,11 @@ import {
 } from '@rigidity/bls-signatures';
 import { keywords } from '../constants/keywords';
 import { printable } from '../constants/printable';
-import { makeDefaultOperators, Operators } from '../index';
 import { makeDoCom } from '../utils/compile';
 import { instructions } from '../utils/instructions';
 import { deserialize } from '../utils/ir';
 import { match } from '../utils/match';
+import { makeDefaultOperators, Operators } from '../utils/operators';
 import { makeDoOpt } from '../utils/optimize';
 import { tokenizeExpr, tokenStream } from '../utils/parser';
 import { ParserError } from './ParserError';

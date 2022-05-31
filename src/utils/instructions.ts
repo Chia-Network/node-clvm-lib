@@ -1,6 +1,6 @@
 import { bytesEqual } from '@rigidity/bls-signatures';
 import { applyAtom, quoteAtom } from '../constants/atoms';
-import { costs } from '../constants/cost';
+import { costs } from '../constants/costs';
 import { Instruction, Program } from '../types/Program';
 import { traversePath } from './environment';
 import { runOperator } from './operators';

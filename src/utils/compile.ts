@@ -1,8 +1,9 @@
 import { bytesEqual, encodeBigInt, toHex } from '@rigidity/bls-signatures';
 import { applyAtom, consAtom, quoteAtom } from '../constants/atoms';
-import { keywords, Program, ProgramOutput } from '../index';
+import { keywords } from '../constants/keywords';
 import { BetterSet } from '../types/BetterSet';
 import { NodePath } from '../types/NodePath';
+import { Program, ProgramOutput } from '../types/Program';
 import { brunAsProgram, Eval, evalAsProgram, quoteAsProgram } from './helpers';
 import { defaultMacroLookup } from './macros';
 import { compileMod } from './mod';

@@ -1,7 +1,8 @@
 import { bytesEqual } from '@rigidity/bls-signatures';
 import { quoteAtom, raiseAtom } from '../constants/atoms';
-import { keywords, Program } from '../index';
+import { keywords } from '../constants/keywords';
 import { NodePath } from '../types/NodePath';
+import { Program } from '../types/Program';
 import { Eval, quoteAsProgram } from './helpers';
 import { match } from './match';
 import { Operator } from './operators';
