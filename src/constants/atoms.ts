@@ -1,4 +1,4 @@
-import { encodeBigInt } from '@rigidity/bls-signatures';
+import { encodeBigInt } from 'chia-bls';
 import { keywords } from './keywords';
 
 export const quoteAtom = encodeBigInt(keywords['q']);

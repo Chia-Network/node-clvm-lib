@@ -8,7 +8,7 @@ import {
     JacobianPoint,
     mod,
     PrivateKey,
-} from '@rigidity/bls-signatures';
+} from 'chia-bls';
 import { costs } from '../constants/costs';
 import { keywords } from '../constants/keywords';
 import { Program, ProgramOutput, RunOptions } from '../types/Program';

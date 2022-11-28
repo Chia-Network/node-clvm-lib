@@ -1,8 +1,8 @@
 # CLVM
 
-[![npm package](https://nodei.co/npm/@rigidity/clvm.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/@rigidity/clvm/)
+[![npm package](https://nodei.co/npm/clvm-lib.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/clvm-lib)
 
-A browser friendly implementation of clvm in TypeScript, based off of [the Chia Network implementation written in Python](https://github.com/Chia-Network/clvm).
+A browser friendly implementation of CLVM in TypeScript, based off of [the Chia Network implementation written in Python](https://github.com/Chia-Network/clvm).
 
 ## Introduction
 

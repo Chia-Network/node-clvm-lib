@@ -2,9 +2,9 @@
     "compilerOptions": {
         "moduleResolution": "node",
         "target": "ESNext",
+        "module": "CommonJS",
         "downlevelIteration": true,
         "esModuleInterop": true,
-        "inlineSourceMap": true,
         "declaration": true,
         "noImplicitAny": true,
         "noImplicitThis": true,

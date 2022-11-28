@@ -1,4 +1,4 @@
-import { bytesEqual, encodeBigInt, toHex } from '@rigidity/bls-signatures';
+import { bytesEqual, encodeBigInt, toHex } from 'chia-bls';
 import { applyAtom, consAtom, quoteAtom } from '../constants/atoms';
 import { keywords } from '../constants/keywords';
 import { BetterSet } from '../types/BetterSet';

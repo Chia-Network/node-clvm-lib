@@ -1,8 +1,4 @@
-import {
-    bigIntBitLength,
-    bigIntToBytes,
-    bytesToBigInt,
-} from '@rigidity/bls-signatures';
+import { bigIntBitLength, bigIntToBytes, bytesToBigInt } from 'chia-bls';
 
 export function composePaths(left: bigint, right: bigint): bigint {
     let mask = 1n;

@@ -1,4 +1,4 @@
-import { bytesEqual } from '@rigidity/bls-signatures';
+import { bytesEqual } from 'chia-bls';
 import { quoteAtom, raiseAtom } from '../constants/atoms';
 import { keywords } from '../constants/keywords';
 import { NodePath } from '../types/NodePath';
