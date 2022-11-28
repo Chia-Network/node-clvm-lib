@@ -1,4 +1,4 @@
-import { bytesEqual } from '@rigidity/bls-signatures';
+import { bytesEqual } from 'chia-bls';
 import { Program } from '../index';
 import { Group } from './helpers';
 

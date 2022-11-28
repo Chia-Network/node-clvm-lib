@@ -1,4 +1,4 @@
-import { decodeInt } from '@rigidity/bls-signatures';
+import { decodeInt } from 'chia-bls';
 import { ParserError } from '../types/ParserError';
 import { Program } from '../types/Program';
 

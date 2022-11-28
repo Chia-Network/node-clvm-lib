@@ -10,7 +10,7 @@ import {
     JacobianPoint,
     PrivateKey,
     toHex,
-} from '@rigidity/bls-signatures';
+} from 'chia-bls';
 import { keywords } from '../constants/keywords';
 import { printable } from '../constants/printable';
 import { makeDoCom } from '../utils/compile';
